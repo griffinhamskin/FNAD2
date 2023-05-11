@@ -6,6 +6,7 @@ from config import *
 from menu import *
 from time import *
 from PIL import Image, ImageSequence
+from random import *
 pygame.mixer.init()
 pygame.mixer.music.load('img\scaryTitleScreen.ogg')
 pygame.mixer.music.set_volume(.4)
@@ -67,6 +68,9 @@ class Game:
 
         self.midCam = pygame.image.load('img\Middle.jpg')
         self.midCam = pygame.transform.scale(self.midCam, (SCREENSIZE))
+
+        self.midCamBackup = pygame.image.load('img\Middle.jpg')
+        self.midCamBackup = pygame.transform.scale(self.midCamBackup, (SCREENSIZE))
         
         self.leftHall = pygame.image.load('img\LeftHallway.jpg')
         self.leftHall = pygame.transform.scale(self.leftHall, (SCREENSIZE))
@@ -98,7 +102,7 @@ class Game:
         self.middleBar = pygame.image.load(r'img/UpBar.png')
         self.middleBar = pygame.transform.scale(self.middleBar, (600,50))
 
-        self.topLeft = pygame.image.load(r'img/TopLeftCorner.jpg')
+        self.topLeft = pygame.image.load('img/AllOfThem (1).jpg')
         self.topLeft = pygame.transform.scale(self.topLeft, (SCREENSIZE))
 
         self.camUI = pygame.image.load('img/camUI.png')
@@ -114,7 +118,7 @@ class Game:
         self.grassRoom = pygame.image.load('img\FarRightCam.jpg')
         self.grassRoom = pygame.transform.scale(self.grassRoom, (SCREENSIZE))
 
-        self.nightWin = pygame.image.load('img\staticWin.png')
+        self.nightWin = pygame.image.load('img\congratsW.png')
         self.nightWin = pygame.transform.scale(self.nightWin, (SCREENSIZE))
 
         self.bois1 = pygame.image.load('img\Bois1.png')
@@ -129,12 +133,28 @@ class Game:
         self.bois4 = pygame.image.load('img\VertScare.png')
         self.bois4 = pygame.transform.scale(self.bois4, (SCREENSIZE))
 
+        self.smile1 = pygame.image.load('img\AllOfThem (1).jpg')
+        self.smile1 = pygame.transform.scale(self.smile1, (SCREENSIZE))
+
+        self.smile2 = pygame.image.load('img\AllOfThem.jpg')
+        self.smile2 = pygame.transform.scale(self.smile2, (SCREENSIZE))
+
+        self.smile3 = pygame.image.load('img\Main RoomR - scaryfacephase2.jpg')
+        self.smile3 = pygame.transform.scale(self.smile3, (SCREENSIZE))
+
+        self.smile4 = pygame.image.load('img\Main RoomR - scaryfacephase3.jpg')
+        self.smile4 = pygame.transform.scale(self.smile4, (SCREENSIZE))
+
+        self.smile5 = pygame.image.load('img\eyes.png')
+
         self.gif = loadGIF('img\cat-dance.gif')
 
         self.gif2 = loadGIF('img/boisvert.gif')
         
         animated_sprite = AnimatedSpriteObject(950,700, self.gif)
         self.all_sprites = pygame.sprite.Group(animated_sprite)
+
+        self.deathNoise = pygame.mixer.Sound("img/scarySighting.wav")
 
         animated_spriteBois = AnimatedSpriteObject(950,1080, self.gif2)
         self.all_sprites2 = pygame.sprite.Group(animated_spriteBois)
@@ -155,7 +175,7 @@ class Game:
 
         self.night=1
 
-        self.monsterSpeed = .1
+        self.monsterSpeed = .01
         self.boisDeathTime = 0
 
         self.winningTime =0
@@ -164,10 +184,14 @@ class Game:
         self.batphase= ''
         self.boilerPower = 100
 
+        self.smilePhase = 0
+
         self.nightWinner = self.font.render(('You survived a night....'), True, BLACK)
 
         self.scaryText = self.font.render(('It is in your room.'), True, WHITE)
+        self.deathText = self.font.render(('You died :P press [ESCAPE] to exit'), True, WHITE)
         
+        self.smileLocationName = ''
 
     def newNight(self):
         self.screen.blit(self.nightWin, (0, 0))
@@ -189,6 +213,7 @@ class Game:
         keys=pygame.key.get_pressed()
         self.time+=1
         self.nighttime+=self.time_speed
+        self.smilePhase+=1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -260,15 +285,22 @@ class Game:
         self.screen.blit(self.camUI,(1400,550))
         camText = self.font.render((f'Cam {int(self.camNumber)}'), True, WHITE)
         self.screen.blit(camText, (1500, 100))
-        if self.boisDeathTime>900:
+        if self.boisDeathTime>900 or self.smilePhase>=1300:
                 self.screen.blit(self.scaryText, (500, 500))
 
     def update(self):
         if self.boilerPower>0:
             self.boilerPower-=self.monsterSpeed*self.night
-
         else:
             self.boisDeath = True
+        if self.smilePhase >=1300 and self.smilePhase<=1400 and self.smileLocation == 1:
+                self.smileLocationName = 'left'
+        if self.smilePhase >=1300 and self.smilePhase<=1400 and self.smileLocation == 2:
+                self.smileLocationName = 'mid'
+        if self.smilePhase >=1300 and self.smilePhase<=1400 and self.smileLocation == 3:
+                self.smileLocationName = 'right'
+        if self.smilePhase<1299:
+            self.smileLocationName = ''
         keys=pygame.key.get_pressed()
 
         if self.boisDeath ==True:
@@ -290,38 +322,75 @@ class Game:
             self.screen.blit(self.darkmid,(0,0))
             self.screen.blit(self.middleBar,(660,1000))
             if self.boisDeathTime>1200:
+                self.smilePhase = 0
                 self.camOff = True
+                pygame.mixer.Sound.play(self.deathNoise)
                 self.all_sprites2.update()
                 self.all_sprites2.draw(self.screen)
+                self.screen.blit(self.deathText, (500, 500))
+            if self.smileLocationName == 'mid':
+                self.screen.blit(self.smile5, (400,400))
+            if self.smilePhase >=1450:
+                #PUT A COOL JUMP SCARE HERE
+                pass
             if keys[pygame.K_f] and self.battery_percent>0:
                 self.battery_percent-=.1
                 self.screen.blit(self.flashmid,(0,0))
                 self.screen.blit(self.middleBar,(660,1000))
+                if self.smileLocationName == 'mid':
+                    self.smilePhase -= 500/self.night
         if self.facing == 'right':
             self.screen.blit(self.darkright,(0,0))
             self.screen.blit(self.middleBar,(660,1000))
             if self.boisDeathTime>1200:
+                self.smilePhase = 0
                 self.camOff = True
+                pygame.mixer.Sound.play(self.deathNoise)
                 self.all_sprites2.update()
                 self.all_sprites2.draw(self.screen)
+                self.screen.blit(self.deathText, (500, 500))
+            if self.smilePhase >=1450:
+                #PUT A COOL JUMP SCARE HERE
+                pass
+            if self.smileLocationName == 'right':
+                self.screen.blit(self.smile5, (400,400))
             if keys[pygame.K_f] and self.battery_percent>0:
                 self.battery_percent-=.1
                 self.screen.blit(self.flashright,(0,0))
                 self.screen.blit(self.middleBar,(660,1000))
+                if self.smileLocationName == 'right':
+                    self.smilePhase -= 500/self.night
         if self.facing == 'left':
             self.screen.blit(self.darkleft,(0,0))
             self.screen.blit(self.middleBar,(660,1000))
             if self.boisDeathTime>1200:
+                self.smilePhase = 0
                 self.camOff = True
+                pygame.mixer.Sound.play(self.deathNoise)
                 self.all_sprites2.update()
                 self.all_sprites2.draw(self.screen)
-                
+                self.screen.blit(self.deathText, (500, 500))
+            if self.smilePhase >=1450:
+                #PUT A COOL JUMP SCARE HERE
+                pass
+            if self.smileLocationName == 'left':
+                self.screen.blit(self.smile5, (400,400))
             if keys[pygame.K_f] and self.battery_percent>0:
                 self.battery_percent-=.05
                 self.screen.blit(self.flashleft,(0,0))
                 self.screen.blit(self.middleBar,(660,1000))
+                if self.smileLocationName == 'left':
+                    self.smilePhase -= 500/self.night
     
         if self.cam =='Mid'and self.battery_percent >= 0:
+            if self.smilePhase>=700 and self.smilePhase<=1000:
+                self.midCam = self.smile3
+            if self.smilePhase >=1000 and self.smilePhase<=1300:
+                self.midCam = self.smile4
+            if self.smilePhase == 1300:
+                self.smileLocation = randrange(3)+1
+            if self.smilePhase>=1300:
+                self.midCam = self.midCamBackup
             self.screen.blit(self.midCam,(0,0))
             self.screen.blit(self.middleBar,(660,1000))
             self.camNumber = 5
@@ -329,6 +398,8 @@ class Game:
         if self.cam =='Boiler'and keys[pygame.K_SPACE] and self.boilerPower <=100:
             self.boilerPower+=.1
         if self.cam =='TopLeft'and self.battery_percent >= 0:
+            if self.smilePhase >=700:
+                self.topLeft = self.smile1
             self.screen.blit(self.topLeft,(0,0))
             self.screen.blit(self.middleBar,(660,1000))
             self.camNumber = 8
